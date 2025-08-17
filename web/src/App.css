@@ -1,0 +1,115 @@
+.App {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+header h1 {
+  color: #2c3e50;
+  margin: 0;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  border-left: 4px solid #3498db;
+}
+
+.stat-card.success {
+  border-left-color: #27ae60;
+}
+
+.stat-card.failed {
+  border-left-color: #e74c3c;
+}
+
+.stat-card h3 {
+  margin: 0 0 10px 0;
+  color: #7f8c8d;
+  font-size: 14px;
+}
+
+.stat-card span {
+  font-size: 24px;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.requests h2 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
+.request {
+  background: white;
+  border: 1px solid #ecf0f1;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  padding: 15px;
+}
+
+.request.success {
+  border-left: 4px solid #27ae60;
+}
+
+.request.failed {
+  border-left: 4px solid #e74c3c;
+}
+
+.request-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.timestamp {
+  color: #7f8c8d;
+  font-size: 14px;
+}
+
+.status {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.status.success {
+  background: #d5f4e6;
+  color: #27ae60;
+}
+
+.status.failed {
+  background: #fadbd8;
+  color: #e74c3c;
+}
+
+.request-details p {
+  margin: 5px 0;
+  color: #34495e;
+  font-size: 14px;
+}
+
+.request-body {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  font-size: 14px;
+}
