@@ -93,7 +93,7 @@ flowchart TD
 
 1. **Clone and setup Python environment:**
 ```bash
-git clone <repository-url>
+git clone https://github.com/gspavan07/llm_system.git
 cd llm_system
 pip install -r requirements.txt
 ```
