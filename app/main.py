@@ -130,12 +130,14 @@ def warmup():
     print("🔑 Checking API keys...")
     openai_key = os.getenv('OPENAI_API_KEY')
     nvidia_key = os.getenv('NVIDIA_API_KEY')
-    gemini_keys = [os.getenv(f'GEMINI_API_KEY{i}') for i in range(1, 6)]
-    
+    gemini_keys = os.getenv('GEMINI_API_KEY')
+    groq_keys = os.getenv('GROQ_API_KEY')
+
     print(f"   OpenAI: {'✅' if openai_key else '❌'}")
     print(f"   NVIDIA: {'✅' if nvidia_key else '❌'}")
-    print(f"   Gemini: {'✅' if any(gemini_keys) else '❌'} ({sum(1 for k in gemini_keys if k)} keys)")
-    
+    print(f"   Gemini: {'✅' if gemini_keys else '❌'}")
+    print(f"   Groq: {'✅' if groq_keys else '❌'}")
+
     get_embeddings(("warmup",))  # Load model
     print(f"✅ System ready at {datetime.now(pytz.timezone('Asia/Kolkata')).strftime('%Y-%m-%d %H:%M:%S')} - Waiting for requests...")
     print("📡 Monitoring API endpoint: /api/v1/hackrx/run")

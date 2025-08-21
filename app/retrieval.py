@@ -22,20 +22,12 @@ CACHE_DIR = "pdf_cache"
 os.makedirs(CACHE_DIR, exist_ok=True)
 
 # Configuration
-# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-# openai_client = OpenAI(api_key=OPENAI_API_KEY)
 openai_client = AzureOpenAI(
     api_version="2024-12-01-preview",
-    azure_endpoint="https://shanm-meg3zpc2-eastus2.cognitiveservices.azure.com/",
-    api_key="90uzDtSJlk1tZHMmzCvnwM3OjkTexh6rqzE2c0oM2USRMk3LM560JQQJ99BHACHYHv6XJ3w3AAAAACOG3TEZ"
+    azure_endpoint=os.getenv("OPENAI_API_ENDPOINT1"),
+    api_key=os.getenv("OPENAI_API_KEY1")
 )
-GEMINI_FALLBACK_KEYS = [
-    os.getenv("GEMINI_API_KEY1"),
-    os.getenv("GEMINI_API_KEY2"),
-    os.getenv("GEMINI_API_KEY3")
-]
-gemini_cycle = itertools.cycle(GEMINI_FALLBACK_KEYS)
-MODEL_NAME = "gemini-2.5-flash"
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 # Create logs directory
 os.makedirs("logs", exist_ok=True)
 
@@ -86,32 +78,33 @@ def process_question(q: str, pages: list, index, doc_url: str):
         token_count = len(prompt.split())
         print(f"   📏 Prompt tokens: {token_count}")
             
-        # try:
-        #     gemini_key = next(gemini_cycle)
-        #     genai.configure(api_key=gemini_key)
-        #     model = genai.GenerativeModel(MODEL_NAME)
-        #     response = model.generate_content(prompt)
-        #     detail_logger.info(f"Question: {q}")
-        #     detail_logger.info(f"Gemini - Tokens sent: {token_count}")
-        #     cleaned_response = clean_response(response.text)
-        #     detail_logger.info(f"Gemini - Response: {cleaned_response}\n")
-        #     return cleaned_response
+        try:
+            print("   🚀 Calling Azure OpenAI GPT-4.1-Mini...")
+            response = openai_client.chat.completions.create(
+                model="gpt-4.1-mini",
+                messages=[{"role": "user", "content": prompt}]
+            )
+            print("   ✅ Received LLM response")
+            cleaned_response = clean_response(response.choices[0].message.content)
+            print("   🧹 Response cleaned and formatted")
+            detail_logger.info(f"Question: {q}")
+            # detail_logger.info(f"Gemini - Tokens sent: {token_count}")
+            detail_logger.info(f"OPENAI - Response: {cleaned_response}\n")
+            return cleaned_response
             
-        # except Exception as gemini_error:
-            # detail_logger.warning(f"Gemini failed: {gemini_error}, falling back to OpenAI")
-        print("   🚀 Calling Azure OpenAI GPT-5-Nano...")
-        response = openai_client.chat.completions.create(
-            model="gpt-5-nano",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        print("   ✅ Received LLM response")
-        cleaned_response = clean_response(response.choices[0].message.content)
-        print("   🧹 Response cleaned and formatted")
-        detail_logger.info(f"Question: {q}")
-        detail_logger.info(f"Gemini - Tokens sent: {token_count}")
-        detail_logger.info(f"OPENAI - Response: {cleaned_response}\n")
-        return cleaned_response
-        
+        except Exception as openai_error:
+            print("   🚀 OpenAI failed Calling Gemini...")
+            detail_logger.warning(f"OpenAI failed Calling Gemini... {openai_error}")
+            genai.configure(api_key=GEMINI_API_KEY)
+            model = genai.GenerativeModel("gemini-2.5-flash")
+            response = model.generate_content(prompt)
+            detail_logger.info(f"Question: {q}")
+            detail_logger.info(f"Gemini - Tokens sent: {token_count}")
+            print("   ✅ Received Gemini LLM response")
+            cleaned_response = clean_response(response.text)
+            print("   🧹 Response cleaned and formatted")
+            detail_logger.info(f"Gemini - Response: {cleaned_response}\n")
+            return cleaned_response
             
     except Exception as e:
         print(f"   ❌ Error processing question: {str(e)}")
@@ -315,7 +308,7 @@ def process_and_answer(pages, questions, doc_url):
     
     print(f"\n🎯 Processing {len(questions)} questions in parallel...")
     
-    with ThreadPoolExecutor(max_workers=min(len(questions), 10)) as executor:
+    with ThreadPoolExecutor(max_workers=min(len(questions), 16)) as executor:
         futures = [executor.submit(process_question, q, pages, index, doc_url) for q in questions]
         answers = [future.result() for future in futures]
     
