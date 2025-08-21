@@ -25,49 +25,52 @@
 
 ```mermaid
 graph TD
-    A[👤 User] --> B[🌐 Web Interface]
-    B --> C[⚡ FastAPI Server]
+    A[👤 User Request] --> B[🌐 FastAPI /api/v1/hackrx/run]
+    B --> C[🔐 Bearer Token Auth]
+    C --> D[💾 Memory Cache Check]
     
-    C --> D{📄 Document Type?}
-    D -->|PDF| E[📑 PDF Parser]
-    D -->|Word| F[📝 DOCX Parser]
-    D -->|Excel| G[📊 Excel Parser]
-    D -->|Image| H[🖼️ OCR Parser]
-    D -->|Web| I[🌐 Web Scraper]
+    D -->|Hit| E[⚡ Load from Memory]
+    D -->|Miss| F[💿 Disk Cache Check]
     
-    E --> J[🔤 Text Extraction]
-    F --> J
-    G --> J
-    H --> J
-    I --> J
+    F -->|Hit| G[📁 Load from Disk]
+    F -->|Miss| H{📄 Document Type?}
     
-    J --> K{💾 Cache?}
-    K -->|Hit| L[⚡ Load Cache]
-    K -->|Miss| M[🧠 Generate Embeddings]
+    H -->|PDF| I[📁 PyMuPDF Parser]
+    H -->|DOCX| J[📝 python-docx Parser]
+    H -->|PPTX| K[📊 python-pptx + OCR]
+    H -->|Excel| L[📊 pandas Parser]
+    H -->|Image| M[🖼️ Tesseract OCR]
+    H -->|API/URL| N[🌐 requests + BeautifulSoup]
     
-    M --> N[🤖 NVIDIA AI]
-    N --> O[🔍 FAISS Index]
-    O --> P[💾 Save Cache]
+    I --> O[🔤 Text Validation]
+    J --> O
+    K --> O
+    L --> O
+    M --> O
+    N --> O
     
-    L --> Q[🔎 Vector Search]
-    P --> Q
+    O --> P[🧠 NVIDIA Embeddings]
+    P --> Q[🔍 FAISS IndexFlatL2]
+    Q --> R[💾 Save to Cache]
     
-    Q --> R{🤔 Complex Query?}
-    R -->|Yes| S[🧩 LangGraph Agent]
-    R -->|No| T[🤖 Direct LLM]
+    E --> S[🔎 Vector Search k=8]
+    G --> S
+    R --> S
     
-    S --> U[⚡ Groq API]
-    T --> V[🎯 Azure GPT-5]
+    S --> T{🤖 Interactive Pattern?}
+    T -->|Yes| U[🧩 LangGraph + Groq]
+    T -->|No| V[🎯 Azure GPT-5-Nano]
     
-    U --> W[📋 Response]
+    U --> W[📋 Clean Response]
     V --> W
     
-    W --> X[👤 User Gets Answer]
+    W --> X[👤 JSON Response]
     
     style A fill:#e1f5fe
     style X fill:#c8e6c9
     style V fill:#fff3e0
     style U fill:#fff3e0
+    style P fill:#ffecb3
 ```
 
 ---
@@ -114,21 +117,22 @@ what will be the projected revenue in 2025?"
 
 ### **🧠 Multi-AI Architecture**
 ```
-Primary AI: Azure OpenAI GPT-5-Nano (Latest & Greatest)
-    ↓ (if fails)
-Backup AI: Google Gemini 2.5 Flash (3 API keys for reliability)
-    ↓ (for complex tasks)
-Reasoning AI: LangGraph + Groq (Multi-step thinking)
+Primary AI: Azure OpenAI GPT-5-Nano (Hardcoded endpoint)
+    ↓ (Gemini currently commented out)
+Backup AI: Google Gemini 2.5 Flash (3 API keys, cycled)
+    ↓ (for interactive/API instructions)
+Reasoning AI: LangGraph + Groq GPT-OSS-120B (Multi-step thinking)
 ```
 
 ### **⚡ Performance Optimizations**
 ```
 🚀 Speed Boosters:
-├── Smart Caching (MD5 hash-based)
-├── Batch Processing (Multiple questions at once)
-├── Parallel Embeddings (ThreadPoolExecutor)
-├── Vector Search (FAISS - Facebook's fastest)
-└── Streaming Downloads (Memory efficient)
+├── Smart Caching (MD5 hash-based, memory + disk)
+├── Batch Processing (ThreadPoolExecutor, max 10 workers)
+├── Batch Embeddings (32 chunks at once for large docs)
+├── Vector Search (FAISS IndexFlatL2, k=8 retrieval)
+├── Streaming Downloads (8KB chunks)
+└── LRU Cache (50 embedding cache limit)
 
 📈 Results:
 • 10x faster on repeated documents
@@ -247,36 +251,45 @@ invest in renewable energy? Provide a risk assessment."
 
 ## 🛠️ **Technical Architecture Deep Dive**
 
-### **Data Flow Diagram**
+### **Actual System Workflow (Code-Verified)**
 ```
 📥 INPUT LAYER
-├── Web Interface (React + WebSocket)
-├── REST API (FastAPI)
-└── File Upload Handler
+├── FastAPI Server (/api/v1/hackrx/run)
+├── Bearer Token Authentication
+└── JSON Request (documents URL + questions)
 
 🔄 PROCESSING LAYER
-├── Document Parsers (PDF, DOCX, PPTX, Excel, OCR)
-├── Text Chunking Engine
-├── Embedding Generator (NVIDIA)
-└── Vector Index Builder (FAISS)
+├── Cache Check (Memory → Disk → New Processing)
+├── Document Type Detection (URL extension analysis)
+├── Format-Specific Parsers:
+│   ├── PDF: PyMuPDF (direct URL support)
+│   ├── DOCX: python-docx (chunked output)
+│   ├── PPTX: python-pptx + OCR (Tesseract)
+│   ├── Excel: pandas (multi-sheet)
+│   ├── Images: Tesseract OCR
+│   └── API: requests + JSON/HTML parsing
+├── Text Validation & Filtering
+└── Batch Embedding Generation
 
 🧠 AI LAYER
-├── Primary: Azure OpenAI GPT-5-Nano
-├── Fallback: Google Gemini 2.5 Flash
-├── Reasoning: LangGraph + Groq
-└── Embeddings: NVIDIA LLaMA-3.2
+├── Embeddings: NVIDIA LLaMA-3.2-NV-EmbedQA-1B-V2
+├── Vector Search: FAISS IndexFlatL2
+├── Interactive Detection: API/URL pattern matching
+├── Primary LLM: Azure OpenAI GPT-5-Nano
+├── Fallback: Google Gemini 2.5 Flash (3 keys, cycled)
+└── Reasoning Agent: LangGraph + Groq (for complex queries)
 
 💾 STORAGE LAYER
-├── Memory Cache (Active documents)
-├── Disk Cache (Processed embeddings)
-├── Vector Database (FAISS indices)
-└── Logs (Request tracking)
+├── Memory Cache: pdf_cache dict (active documents)
+├── Disk Cache: pickle files + FAISS indices (MD5 hashed)
+├── Logs: JSON requests + API details
+└── WebSocket: Real-time monitoring
 
-📊 MONITORING LAYER
-├── Real-time Dashboard
-├── Performance Metrics
-├── Error Tracking
-└── Usage Analytics
+📊 OUTPUT LAYER
+├── Parallel Question Processing (ThreadPoolExecutor)
+├── Response Cleaning & Formatting
+├── WebSocket Broadcasting
+└── JSON Response with answers array
 ```
 
 ### **Scalability Features**
@@ -364,12 +377,13 @@ Caching System         | ❌          | ✅
 ### **vs Competitors**
 ```
 🥇 Our Unique Advantages:
-├── Latest GPT-5-Nano integration
-├── Triple-fallback AI architecture
-├── Real-time processing pipeline
-├── Advanced caching system
-├── Interactive reasoning agent
-└── Production-ready monitoring
+├── Latest GPT-5-Nano integration (Azure)
+├── Multi-format OCR support (PPTX images, standalone images)
+├── Dual-layer caching (memory + disk with FAISS)
+├── Interactive API instruction detection
+├── LangGraph reasoning for complex workflows
+├── Real-time WebSocket monitoring
+└── Production-ready error handling & logging
 ```
 
 ---
